@@ -20,11 +20,11 @@ class CourseView(APIView):
                     break
 
             if access:
-                grade = request.POST.get("grade", None)
+                grade = request.data.get("grade", None)
                 if grade:
                     student = User.objects.get(pk=user_id)
-                    module_type = request.POST.get("module_type", "edx_sg_block")
-                    max_grade = request.POST.get("max_grade", 100)
+                    module_type = request.data.get("module_type", "edx_sg_block")
+                    max_grade = request.data.get("max_grade", 100)
                     module, created = StudentModule.objects.get_or_create(
                         course_id=course_id,
                         module_state_key=block_id,
