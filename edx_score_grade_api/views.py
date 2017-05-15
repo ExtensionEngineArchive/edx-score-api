@@ -6,12 +6,13 @@ from rest_framework import status
 from courseware.access import has_access
 from courseware.courses import get_course_by_id
 from courseware.models import StudentModule
-from opaque_keys.edx.keys import CourseKey
+from opaque_keys.edx.keys import CourseKey, UsageKey
 
 class CourseView(APIView):
     def post(self, request, course_id, user_id, block_id):
         if request.user.is_authenticated:
-            course = get_course_by_id(CourseKey.from_string(course_id))
+            course_key = CourseKey.from_string(course_id)
+            course = get_course_by_id(course_key)
             
             access = False
             for level in ['instructor', 'staff']:
@@ -22,12 +23,13 @@ class CourseView(APIView):
             if access:
                 grade = request.data.get("grade", None)
                 if grade:
+                    block_key = UsageKey.from_string(block_id)
                     student = User.objects.get(pk=user_id)
                     module_type = request.data.get("module_type", "edx_sg_block")
                     max_grade = request.data.get("max_grade", 100)
                     module, created = StudentModule.objects.get_or_create(
-                        course_id=course_id,
-                        module_state_key=block_id,
+                        course_id=course_key,
+                        module_state_key=block_key,
                         student=student,
                         defaults={
                             'state': '{}',
