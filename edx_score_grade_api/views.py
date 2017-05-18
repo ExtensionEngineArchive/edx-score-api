@@ -25,7 +25,7 @@ class CourseView(APIView):
                 if grade:
                     block_key = UsageKey.from_string(block_id)
                     student = User.objects.get(pk=user_id)
-                    module_type = request.data.get("module_type", "edx_sg_block")
+                    module_type = request.data.get("module_type", block_key.block_type)
                     max_grade = request.data.get("max_grade", 100)
                     module, created = StudentModule.objects.get_or_create(
                         course_id=course_key,
