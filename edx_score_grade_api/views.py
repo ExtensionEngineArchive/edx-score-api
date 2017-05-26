@@ -23,10 +23,11 @@ class CourseView(APIView):
             if access:
                 grade = request.data.get("grade", None)
                 if grade:
+                    grade = float(grade)
                     block_key = UsageKey.from_string(block_id)
                     student = User.objects.get(pk=user_id)
                     module_type = request.data.get("module_type", block_key.block_type)
-                    max_grade = request.data.get("max_grade", 100)
+                    max_grade = float(request.data.get("max_grade", 100))
                     module, created = StudentModule.objects.get_or_create(
                         course_id=course_key,
                         module_state_key=block_key,
@@ -39,7 +40,7 @@ class CourseView(APIView):
                         })
                     if created:
                         return Response({'status':'success', 'message':'Created new StudentModule record!'})
-                    module.grade = int(grade)
+                    module.grade = grade
                     module.save()
                     return Response({'status':'success', 'message':'Updated StudentModule record!'})
                 else:
