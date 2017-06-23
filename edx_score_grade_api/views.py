@@ -28,12 +28,13 @@ class CourseView(APIView):
                     student = User.objects.get(pk=user_id)
                     module_type = request.data.get("module_type", block_key.block_type)
                     max_grade = float(request.data.get("max_grade", 100))
+                    state = request.data.get("state", '{}')
                     module, created = StudentModule.objects.get_or_create(
                         course_id=course_key,
                         module_state_key=block_key,
                         student=student,
                         defaults={
-                            'state': '{}',
+                            'state': state,
                             'module_type': module_type,
                             'grade': grade,     
                             'max_grade': max_grade
