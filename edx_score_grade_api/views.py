@@ -1,3 +1,4 @@
+import json
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -42,6 +43,11 @@ class CourseView(APIView):
                     if created:
                         return Response({'status':'success', 'message':'Created new StudentModule record!'})
                     module.grade = grade
+                    if not state == '{}':
+                        old_state = json.loads(module.state)
+                        new_state = json.loads(state)
+                        old_state.update(new_state)
+                        module.state = json.dumps(old_state)
                     module.save()
                     return Response({'status':'success', 'message':'Updated StudentModule record!'})
                 else:
