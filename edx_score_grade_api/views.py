@@ -77,8 +77,9 @@ class CourseView(APIView):
                     module.grade = grade
                     if not state == '{}':
                         old_state = json.loads(module.state)
-                        new_state = json.loads(state)
-                        old_state.update(new_state)
+                        if not isinstance(state, dict):
+                            state = json.loads(state)
+                        old_state.update(state)
                         module.state = json.dumps(old_state)
                     module.save()
                     return Response({'status':'success', 'message':'Updated StudentModule record!'})
