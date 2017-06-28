@@ -10,6 +10,36 @@ from courseware.models import StudentModule
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
 class CourseView(APIView):
+    def get(self, request, course_id, user_id, block_id):
+        if request.user.is_authenticated:
+            course_key = CourseKey.from_string(course_id)
+            course = get_course_by_id(course_key)
+            
+            access = False
+            for level in ['instructor', 'staff']:
+                if has_access(request.user, level, course):
+                    access=True
+                    break
+
+            if access:
+                block_key = UsageKey.from_string(block_id)
+                student = User.objects.get(pk=user_id)
+                module_type = block_key.block_type
+                try:
+                    module = StudentModule.objects.get(
+                        course_id=course_key,
+                        module_state_key=block_key,
+                        student=student)
+                except:
+                    return Response({'status':'error', 'message':'There was an error with fetching student module data!'})
+                data = {
+                    'user_id':user_id,
+                    'course_id': course_id,
+                    'module_type': module_type,
+                    'state': modue.state
+                }
+                return Response({'status':'success', 'data':data})
+
     def post(self, request, course_id, user_id, block_id):
         if request.user.is_authenticated:
             course_key = CourseKey.from_string(course_id)
