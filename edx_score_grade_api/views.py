@@ -36,7 +36,9 @@ class CourseView(APIView):
                     'user_id':user_id,
                     'course_id': course_id,
                     'module_type': module_type,
-                    'state': module.state
+                    'state': module.state,
+                    'grade': module.grade,     
+                    'max_grade': module.max_grade
                 }
                 return Response({'status':'success', 'data':data})
 
