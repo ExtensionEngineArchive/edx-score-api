@@ -5,11 +5,11 @@ from setuptools import setup, find_packages
 
 setup(
     name='edx-score-grade-api',
-    version='0.0.1',
+    version='0.1.6',
     description='edx-score-grade-api Score Grade API',
     license='Affero GNU General Public License v3 (GPLv3)',
     url="https://github.com/kotky/edx-score-api",
-    author="kotky",
+    author="Josip Kotarac",
     packages=find_packages(),
     include_package_data=True,
     install_requires=[
