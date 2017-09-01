@@ -106,7 +106,7 @@ class CourseViewList(APIView):
 
             if access:
                 modules_list = []
-                for grade_data in request.data.get("users", []):
+                for grade_data in request.data.get("users", {}).itervalues():
                     grade = grade_data.get("grade", None)
                     if grade:
                         grade = float(grade)
