@@ -1,4 +1,6 @@
 import json
+
+from django.core import serializers
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -85,6 +87,62 @@ class CourseView(APIView):
                     return Response({'status':'success', 'message':'Updated StudentModule record!'})
                 else:
                     return Response({'status':'error', 'message':'You need to send grade!'})
+            else:
+                return Response({'status':'error', 'message':'You need to be instructor or staff on course!'})
+        else:
+            return Response({'status':'error', 'message':'You need to logged in!'})
+
+class CourseViewList(APIView):
+    def post(self, request, course_id):
+        if request.user.is_authenticated:
+            course_key = CourseKey.from_string(course_id)
+            course = get_course_by_id(course_key)
+
+            access = False
+            for level in ['instructor', 'staff']:
+                if has_access(request.user, level, course):
+                    access=True
+                    break
+
+            if access:
+                modules_list = []
+                for grade_data in request.data.get("users", []):
+                    grade = grade_data.get("grade", None)
+                    if grade:
+                        grade = float(grade)
+                        block_key = UsageKey.from_string(grade_data.get("block_id", None))
+                        student = User.objects.get(pk=grade_data.get("user_id", None))
+                        module_type = grade_data.get("module_type", block_key.block_type)
+                        state = request.data.get("state", '{}')
+                        defaults={
+                                'state': state,
+                                'module_type': module_type,
+                                'grade': grade
+                            }
+                        max_grade = float(grade_data.get("max_grade", 0))
+                        if not (max_grade == 0):
+                            defaults["max_grade"]=max_grade
+                        module, created = StudentModule.objects.get_or_create(
+                            course_id=course_key,
+                            module_state_key=block_key,
+                            student=student,
+                            defaults=defaults)
+                        if created:
+                            modules_list.append(module)
+                            continue
+                        module.grade = grade
+                        if not state == '{}':
+                            old_state = json.loads(module.state)
+                            if not isinstance(state, dict):
+                                state = json.loads(state)
+                            old_state.update(state)
+                            module.state = json.dumps(old_state)
+                        module.save()
+                        modules_list.append(module)
+                    else:
+                        return Response({'status':'error', 'message':'You need to send grade!'})
+                data_saved = serializers.serialize('json', modules_list)
+                return Response({'status':'success', 'message':'All grades are updated!', 'data': data_saved})
             else:
                 return Response({'status':'error', 'message':'You need to be instructor or staff on course!'})
         else:
