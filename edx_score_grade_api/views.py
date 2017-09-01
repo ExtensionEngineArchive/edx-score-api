@@ -108,7 +108,7 @@ class CourseViewList(APIView):
                 modules_list = []
                 for grade_data in request.data.get("users", {}).itervalues():
                     grade = grade_data.get("grade", None)
-                    if grade:
+                    if grade is not None and grade>=0:
                         grade = float(grade)
                         block_key = UsageKey.from_string(grade_data.get("block_id", None))
                         student = User.objects.get(pk=grade_data.get("user_id", None))
