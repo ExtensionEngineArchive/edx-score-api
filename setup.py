@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='edx-score-grade-api',
-    version='0.1.21',
+    version='0.1.22',
     description='edx-score-grade-api Score Grade API',
     license='Affero GNU General Public License v3 (GPLv3)',
     url="https://github.com/kotky/edx-score-api",
