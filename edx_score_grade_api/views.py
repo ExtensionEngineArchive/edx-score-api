@@ -166,7 +166,9 @@ class CourseViewPurge(APIView):
                     modules = StudentModule.objects.filter(
                         course_id=course_key,
                         module_state_key=block_key)
+                    print modules
                     if len(modules)>0:
+                        print "will delete!"
                         modules.delete()
                 except:
                     return Response({'status':'error', 'message':'There was an error with deleting students module data!'})
