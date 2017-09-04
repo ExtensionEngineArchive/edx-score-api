@@ -148,3 +148,27 @@ class CourseViewList(APIView):
         else:
             return Response({'status':'error', 'message':'You need to logged in!'})
 
+class CourseViewPurge(APIView):
+    def delete(self, request, course_id, block_id):
+        if request.user.is_authenticated:
+            course_key = CourseKey.from_string(course_id)
+            course = get_course_by_id(course_key)
+
+            access = False
+            for level in ['instructor', 'staff']:
+                if has_access(request.user, level, course):
+                    access=True
+                    break
+
+            if access:
+                block_key = UsageKey.from_string(block_id)
+                try:
+                    modules = StudentModule.objects.filter(
+                        course_id=course_key,
+                        module_state_key=block_key)
+                    if len(modules)>0:
+                        modules.delete()
+                except:
+                    return Response({'status':'error', 'message':'There was an error with deleting students module data!'})
+                return Response({'status':'success', 'message':'All students data for block {} in a course {} were successfully deleted!'.format(course_id, block_id)})
+
