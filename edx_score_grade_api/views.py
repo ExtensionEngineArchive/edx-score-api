@@ -57,7 +57,7 @@ class CourseView(APIView):
 
             if access:
                 grade = request.data.get("grade", None)
-                if grade:
+                if grade is not None and grade>=0:
                     grade = float(grade)
                     block_key = UsageKey.from_string(block_id)
                     student = User.objects.get(pk=user_id)
