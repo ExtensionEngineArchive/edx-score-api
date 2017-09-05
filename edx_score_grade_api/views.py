@@ -11,6 +11,9 @@ from courseware.courses import get_course_by_id
 from courseware.models import StudentModule
 from opaque_keys.edx.keys import CourseKey, UsageKey
 
+from xmodule.modulestore.django import modulestore
+from xmodule.modulestore.inheritance import own_metadata
+
 class CourseView(APIView):
     def get(self, request, course_id, user_id, block_id):
         if request.user.is_authenticated:
@@ -62,6 +65,7 @@ class CourseView(APIView):
                     block_key = UsageKey.from_string(block_id)
                     student = User.objects.get(pk=user_id)
                     module_type = request.data.get("module_type", block_key.block_type)
+                    if ()
                     max_grade = float(request.data.get("max_grade", 100))
                     state = request.data.get("state", '{}')
                     module, created = StudentModule.objects.get_or_create(
@@ -105,13 +109,19 @@ class CourseViewList(APIView):
                     break
 
             if access:
+                module_store = modulestore()
+                modules_metadata={}
                 modules_list = []
                 for grade_data in request.data.get("users", {}).itervalues():
                     grade = grade_data.get("grade", None)
                     if grade is not None and grade>=0:
                         grade = float(grade)
                         block_key = UsageKey.from_string(grade_data.get("block_id", None))
+                        if not modules_metadata.get(str(block_key)):
+                            modules_metadata[str(block_key)]=own_metadata(module_store.get_item(block_key))
                         student = User.objects.get(pk=grade_data.get("user_id", None))
+                        if block_key.block_type=="edx_sg_block":
+                            max_grade=modules_metadata.get("points",None)
                         module_type = grade_data.get("module_type", block_key.block_type)
                         state = request.data.get("state", '{}')
                         defaults={
@@ -119,9 +129,9 @@ class CourseViewList(APIView):
                                 'module_type': module_type,
                                 'grade': grade
                             }
-                        max_grade = float(grade_data.get("max_grade", 0))
-                        if not (max_grade == 0):
-                            defaults["max_grade"]=max_grade
+                        if not max_grade:
+                            max_grade = float(grade_data.get("max_grade", 100))
+                        defaults["max_grade"]=max_grade
                         module, created = StudentModule.objects.get_or_create(
                             course_id=course_key,
                             module_state_key=block_key,
@@ -131,6 +141,8 @@ class CourseViewList(APIView):
                             modules_list.append(module)
                             continue
                         module.grade = grade
+                        if not (module.max_grade == max_grade):
+                            module.max_grade = max_grade
                         if not state == '{}':
                             old_state = json.loads(module.state)
                             if not isinstance(state, dict):
