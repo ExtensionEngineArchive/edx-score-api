@@ -67,7 +67,7 @@ class CourseView(APIView):
                     student = User.objects.get(pk=user_id)
                     module_type = request.data.get("module_type", block_key.block_type)
                     metadata = own_metadata(module_store.get_item(block_key))
-                    if (metadata.get("points"))
+                    if metadata.get("points"):
                         max_grade = float(metadata.get("points",100))
                     else:
                         max_grade = float(request.data.get("max_grade", 100))
