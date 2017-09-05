@@ -121,7 +121,7 @@ class CourseViewList(APIView):
                             modules_metadata[str(block_key)]=own_metadata(module_store.get_item(block_key))
                         student = User.objects.get(pk=grade_data.get("user_id", None))
                         if block_key.block_type=="edx_sg_block":
-                            max_grade=modules_metadata.get("points",None)
+                            max_grade=modules_metadata.get(str(block_key)).get("points",None)
                         module_type = grade_data.get("module_type", block_key.block_type)
                         state = request.data.get("state", '{}')
                         defaults={
