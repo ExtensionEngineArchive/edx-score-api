@@ -61,12 +61,16 @@ class CourseView(APIView):
             if access:
                 grade = request.data.get("grade", None)
                 if grade is not None and grade>=0:
+                    module_store = modulestore()
                     grade = float(grade)
                     block_key = UsageKey.from_string(block_id)
                     student = User.objects.get(pk=user_id)
                     module_type = request.data.get("module_type", block_key.block_type)
-                    if ()
-                    max_grade = float(request.data.get("max_grade", 100))
+                    metadata = own_metadata(module_store.get_item(block_key))
+                    if (metadata.get("points"))
+                        max_grade = float(metadata.get("points",100))
+                    else:
+                        max_grade = float(request.data.get("max_grade", 100))
                     state = request.data.get("state", '{}')
                     module, created = StudentModule.objects.get_or_create(
                         course_id=course_key,
@@ -81,6 +85,8 @@ class CourseView(APIView):
                     if created:
                         return Response({'status':'success', 'message':'Created new StudentModule record!'})
                     module.grade = grade
+                    if not (module.max_grade == max_grade):
+                        module.max_grade = max_grade
                     if not state == '{}':
                         old_state = json.loads(module.state)
                         if not isinstance(state, dict):
