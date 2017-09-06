@@ -103,7 +103,7 @@ class CourseViewList(APIView):
                         if block_key.block_type=="edx_sg_block":
                             max_grade=modules_metadata.get(str(block_key)).get("points",None)
                         module_type = grade_data.get("module_type", block_key.block_type)
-                        state = request.data.get("state")
+                        state = grade_data.get("state")
                         defaults={
                                 'state': state or '{}',
                                 'module_type': module_type,
@@ -165,12 +165,12 @@ def student_module_state_updater(module, state):
         except Exception as e:
             return module
         old_state.update(state)
-        module.state = json.dumps(old_state)
+        module.state = json.dumps(old_state, ensure_ascii=True)
     return module
 
 def check_user_access(user, course):
     for level in ['instructor', 'staff']:
-        if has_access(request.user, level, course):
+        if has_access(user, level, course):
             return True
     return False
 
