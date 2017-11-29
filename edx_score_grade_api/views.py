@@ -18,7 +18,7 @@ class CourseView(APIView):
     def get(self, request, course_id, user_id, block_id):
         if request.user.is_authenticated:
             course, course_key = get_course_from_course_id(course_id)
-            
+
             if check_user_access(request.user, course):
                 block_key = UsageKey.from_string(block_id)
                 student = User.objects.get(pk=user_id)
@@ -35,7 +35,7 @@ class CourseView(APIView):
                     'course_id': course_id,
                     'module_type': module_type,
                     'state': module.state,
-                    'grade': module.grade,     
+                    'grade': module.grade,
                     'max_grade': module.max_grade
                 }
                 return Response({'status':'success', 'data':data})
@@ -43,7 +43,7 @@ class CourseView(APIView):
     def post(self, request, course_id, user_id, block_id):
         if request.user.is_authenticated:
             course, course_key = get_course_from_course_id(course_id)
-            
+
             if check_user_access(request.user, course):
                 grade = request.data.get("grade", None)
                 if grade is not None and grade>=0:
@@ -65,7 +65,7 @@ class CourseView(APIView):
                         defaults={
                             'state': state or '{}',
                             'module_type': module_type,
-                            'grade': grade,     
+                            'grade': grade,
                             'max_grade': max_grade
                         })
                     if created:
@@ -77,7 +77,7 @@ class CourseView(APIView):
                     module.save()
                     return Response({'status':'success', 'message':'Updated StudentModule record!'})
                 else:
-                    return Response({'status':'error', 'message':'You need to send grade!'})
+                    return Response({'status': 'error', 'message': 'Empty manual grade cells are not permitted.'})
             else:
                 return Response({'status':'error', 'message':'You need to be instructor or staff on course!'})
         else:
@@ -127,7 +127,7 @@ class CourseViewList(APIView):
                         module.save()
                         modules_list.append(module)
                     else:
-                        return Response({'status':'error', 'message':'You need to send grade!'})
+                        return Response({'status': 'error', 'message': 'Empty manual grade cells are not permitted.'})
                 data_saved = serializers.serialize('json', modules_list)
                 return Response({'status':'success', 'message':'All grades are updated!', 'data': data_saved})
             else:
