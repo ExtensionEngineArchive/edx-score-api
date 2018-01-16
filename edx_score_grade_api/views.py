@@ -100,8 +100,11 @@ class CourseViewList(APIView):
                         if not modules_metadata.get(str(block_key)):
                             modules_metadata[str(block_key)]=own_metadata(module_store.get_item(block_key))
                         student = User.objects.get(pk=grade_data.get("user_id", None))
-                        if block_key.block_type=="edx_sg_block":
+                        max_grade = float(grade_data.get("max_grade", None))
+                        if not max_grade and block_key.block_type=="edx_sg_block":
                             max_grade=modules_metadata.get(str(block_key)).get("points",None)
+                        if not max_grade:
+                            max_grade = 100
                         module_type = grade_data.get("module_type", block_key.block_type)
                         state = grade_data.get("state")
                         defaults={
@@ -109,8 +112,6 @@ class CourseViewList(APIView):
                                 'module_type': module_type,
                                 'grade': grade
                             }
-                        if not max_grade:
-                            max_grade = float(grade_data.get("max_grade", 100))
                         defaults["max_grade"]=max_grade
                         module, created = StudentModule.objects.get_or_create(
                             course_id=course_key,
