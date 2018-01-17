@@ -106,13 +106,13 @@ class CourseViewList(APIView):
                         if not max_grade:
                             max_grade = 100
                         module_type = grade_data.get("module_type", block_key.block_type)
-                        state = grade_data.get("state")
-                        defaults={
-                                'state': state or '{}',
+                        state = grade_data.get("state", {})
+                        defaults = {
+                                'state': json.dumps(state, ensure_ascii = True) or '{}',
                                 'module_type': module_type,
                                 'grade': grade
                             }
-                        defaults["max_grade"]=max_grade
+                        defaults["max_grade"] = max_grade
                         module, created = StudentModule.objects.get_or_create(
                             course_id=course_key,
                             module_state_key=block_key,
