@@ -24,21 +24,26 @@ class CourseView(APIView):
                 student = User.objects.get(pk=user_id)
                 module_type = block_key.block_type
                 try:
-                    module = StudentModule.objects.get(
+                    module_list = StudentModule.objects.filter(
                         course_id=course_key,
                         module_state_key=block_key,
                         student=student)
+
+                    if len(module_list) > 0:
+                        data = {
+                            'user_id':user_id,
+                            'course_id': course_id,
+                            'module_type': module_type,
+                            'state': module_list[0].state,
+                            'grade': module_list[0].grade,
+                            'max_grade': module_list[0].max_grade
+                        }
+                    else:
+                        data = {}
+
+                    return Response({'status':'success', 'data':data})
                 except:
                     return Response({'status':'error', 'message':'There was an error with fetching student module data!'})
-                data = {
-                    'user_id':user_id,
-                    'course_id': course_id,
-                    'module_type': module_type,
-                    'state': module.state,
-                    'grade': module.grade,
-                    'max_grade': module.max_grade
-                }
-                return Response({'status':'success', 'data':data})
 
     def post(self, request, course_id, user_id, block_id):
         if request.user.is_authenticated:
@@ -110,9 +115,9 @@ class CourseViewList(APIView):
                         defaults = {
                                 'state': json.dumps(state, ensure_ascii = True) or '{}',
                                 'module_type': module_type,
-                                'grade': grade
+                                'grade': grade,
+                                'max_grade': max_grade
                             }
-                        defaults["max_grade"] = max_grade
                         module, created = StudentModule.objects.get_or_create(
                             course_id=course_key,
                             module_state_key=block_key,
