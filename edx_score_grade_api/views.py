@@ -155,7 +155,8 @@ class CourseViewList(APIView):
                 if visibility_data:
                     block_key = UsageKey.from_string(visibility_data.get('block_id'))
                     descriptor = module_store.get_item(block_key)
-                    self._toggle_grades_published(course, request.user, descriptor, visibility_data.get('visibility'))
+                    is_published = json.loads(visibility_data.get('visibility'))
+                    self._toggle_grades_published(course, request.user, descriptor, is_published)
 
                 return Response({'status':'success', 'message':'All grades are updated!', 'data': data_saved})
             else:
