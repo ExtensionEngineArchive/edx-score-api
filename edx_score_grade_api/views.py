@@ -5,12 +5,14 @@ from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+from xblock.runtime import KvsFieldData
 
 from courseware.access import has_access
 from courseware.courses import get_course_by_id
+from courseware.model_data import DjangoKeyValueStore, FieldDataCache
 from courseware.models import StudentModule
+from lms.djangoapps.lms_xblock.models import XBlockAsidesConfig
 from opaque_keys.edx.keys import CourseKey, UsageKey
-
 from xmodule.modulestore.django import modulestore
 from xmodule.modulestore.inheritance import own_metadata
 
@@ -89,6 +91,18 @@ class CourseView(APIView):
             return Response({'status':'error', 'message':'You need to logged in!'})
 
 class CourseViewList(APIView):
+    def _toggle_grades_published(self, course, student, descriptor, is_published):
+        """ Publish/unpublish grades that were given by an XBlock. """
+        field_data_cache_real_user = FieldDataCache.cache_for_descriptor_descendents(
+            course.id,
+            student,
+            descriptor,
+            asides=XBlockAsidesConfig.possible_asides()
+        )
+        student_data_real_user = KvsFieldData(DjangoKeyValueStore(field_data_cache_real_user))
+        student_data_real_user.set(descriptor, 'grades_published', is_published)
+
+
     def post(self, request, course_id):
         if request.user.is_authenticated:
             course, course_key = get_course_from_course_id(course_id)
@@ -97,13 +111,14 @@ class CourseViewList(APIView):
                 module_store = modulestore()
                 modules_metadata={}
                 modules_list = []
+
                 for grade_data in request.data.get("users", {}).itervalues():
                     grade = grade_data.get("grade", None)
                     if grade is not None and grade>=0:
                         grade = float(grade)
                         block_key = UsageKey.from_string(grade_data.get("block_id", None))
                         if not modules_metadata.get(str(block_key)):
-                            modules_metadata[str(block_key)]=own_metadata(module_store.get_item(block_key))
+                            modules_metadata[str(block_key)] = own_metadata(module_store.get_item(block_key))
                         student = User.objects.get(pk=grade_data.get("user_id", None))
                         max_grade = float(grade_data.get("max_grade", None))
                         if not max_grade and block_key.block_type=="edx_sg_block":
@@ -135,6 +150,13 @@ class CourseViewList(APIView):
                     else:
                         return Response({'status': 'error', 'message': 'Empty manual grade cells are not permitted.'})
                 data_saved = serializers.serialize('json', modules_list)
+
+                visibility_data = request.data.get('visibility')
+                if visibility_data:
+                    block_key = UsageKey.from_string(visibility_data.get('block_id'))
+                    descriptor = module_store.get_item(block_key)
+                    self._toggle_grades_published(course, request.user, descriptor, visibility_data.get('visibility'))
+
                 return Response({'status':'success', 'message':'All grades are updated!', 'data': data_saved})
             else:
                 return Response({'status':'error', 'message':'You need to be instructor or staff on course!'})
