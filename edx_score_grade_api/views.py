@@ -90,6 +90,7 @@ class CourseView(APIView):
         else:
             return Response({'status':'error', 'message':'You need to logged in!'})
 
+
 class CourseViewList(APIView):
     def _toggle_grades_published(self, course, student, descriptor, is_published):
         """ Publish/unpublish grades that were given by an XBlock. """
@@ -102,33 +103,50 @@ class CourseViewList(APIView):
         student_data_real_user = KvsFieldData(DjangoKeyValueStore(field_data_cache_real_user))
         student_data_real_user.set(descriptor, 'grades_published', is_published)
 
-
     def post(self, request, course_id):
         if request.user.is_authenticated:
             course, course_key = get_course_from_course_id(course_id)
 
             if check_user_access(request.user, course):
                 module_store = modulestore()
-                modules_metadata={}
+                modules_metadata = {}
                 modules_list = []
 
                 for grade_data in request.data.get("users", {}).itervalues():
                     grade = grade_data.get("grade", None)
-                    if grade is not None and grade>=0:
+
+                    if grade is not None and grade >= 0:
+                        block_key = UsageKey.from_string(grade_data.get('block_id', None))
                         grade = float(grade)
-                        block_key = UsageKey.from_string(grade_data.get("block_id", None))
+                        max_grade = float(grade_data.get('max_grade', None))
+                        module_type = grade_data.get('module_type', block_key.block_type)
+                        state = grade_data.get('state', {})
+                        student = User.objects.get(pk=grade_data.get('user_id', None))
+
+                        if grade_data.get('remove_adjusted_grade', False):
+                            section_block_id = grade_data.get('section_block_id', None)
+                            section_block_key = UsageKey.from_string(section_block_id) if section_block_id else block_key
+
+                            StudentModule.objects.filter(
+                                course_id=course_key,
+                                module_state_key=section_block_key,
+                                student=student,
+                            ).delete()
+
+                            if not section_block_id:
+                                continue
+
                         if not modules_metadata.get(str(block_key)):
                             modules_metadata[str(block_key)] = own_metadata(module_store.get_item(block_key))
-                        student = User.objects.get(pk=grade_data.get("user_id", None))
-                        max_grade = float(grade_data.get("max_grade", None))
-                        if not max_grade and block_key.block_type=="edx_sg_block":
-                            max_grade=modules_metadata.get(str(block_key)).get("points",None)
+
+                        if not max_grade and block_key.block_type == "edx_sg_block":
+                            max_grade = modules_metadata.get(str(block_key)).get("points", None)
+
                         if not max_grade:
                             max_grade = 100
-                        module_type = grade_data.get("module_type", block_key.block_type)
-                        state = grade_data.get("state", {})
+
                         defaults = {
-                                'state': json.dumps(state, ensure_ascii = True) or '{}',
+                                'state': json.dumps(state, ensure_ascii=True) or '{}',
                                 'module_type': module_type,
                                 'grade': grade,
                                 'max_grade': max_grade
@@ -138,12 +156,15 @@ class CourseViewList(APIView):
                             module_state_key=block_key,
                             student=student,
                             defaults=defaults)
+
                         if created:
                             modules_list.append(module)
                             continue
                         module.grade = grade
+
                         if not (module.max_grade == max_grade):
                             module.max_grade = max_grade
+
                         module = student_module_state_updater(module, state)
                         module.save()
                         modules_list.append(module)
@@ -158,11 +179,11 @@ class CourseViewList(APIView):
                     is_published = json.loads(visibility_data.get('visibility'))
                     self._toggle_grades_published(course, request.user, descriptor, is_published)
 
-                return Response({'status':'success', 'message':'All grades are updated!', 'data': data_saved})
+                return Response({'status': 'success', 'message': 'All grades are updated!', 'data': data_saved})
             else:
-                return Response({'status':'error', 'message':'You need to be instructor or staff on course!'})
+                return Response({'status': 'error', 'message': 'You need to be instructor or staff on course!'})
         else:
-            return Response({'status':'error', 'message':'You need to logged in!'})
+            return Response({'status': 'error', 'message': 'You need to logged in!'})
 
 class CourseViewPurge(APIView):
     def delete(self, request, course_id, block_id):
