@@ -125,16 +125,14 @@ class CourseViewList(APIView):
 
                         if grade_data.get('remove_adjusted_grade', False):
                             section_block_id = grade_data.get('section_block_id', None)
-                            section_block_key = UsageKey.from_string(section_block_id) if section_block_id else block_key
+                            section_block_key = UsageKey.from_string(section_block_id) if section_block_id else None
 
-                            StudentModule.objects.filter(
-                                course_id=course_key,
-                                module_state_key=section_block_key,
-                                student=student,
-                            ).delete()
-
-                            if not section_block_id:
-                                continue
+                            if section_block_key:
+                                StudentModule.objects.filter(
+                                    course_id=course_key,
+                                    module_state_key=section_block_key,
+                                    student=student,
+                                ).delete()
 
                         if not modules_metadata.get(str(block_key)):
                             modules_metadata[str(block_key)] = own_metadata(module_store.get_item(block_key))
